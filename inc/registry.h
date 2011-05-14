@@ -30,8 +30,11 @@ class RegPath {
 	private:
 
 		void SplitPath( const std::string & path );
+		void UpdateReg();
+
 		HKEY mRoot, mPathKey;
-		std::vector <std::string> mPath;
+		typedef std::vector <std::string>  VecType;
+		VecType mPath;
 };
 
 
