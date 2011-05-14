@@ -1,0 +1,9 @@
+syntax: glob
+*.exe
+*.zip
+*.o
+*.orig
+obj
+bin
+*.layout
+*.depend
