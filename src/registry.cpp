@@ -12,6 +12,10 @@
 #include "error.h"
 using std::string;
 
+//----------------------------------------------------------------------------
+// Create a RegPath object from a registry key, which must be either 
+// HKEY_CURRENT_USER or HKEY_LOCAL_MACHINE. 
+//----------------------------------------------------------------------------
 
 RegPath :: RegPath( HKEY root ) : mRoot( root ), mPathKey( 0 ) {
 	long res = 0;
@@ -38,19 +42,35 @@ RegPath :: RegPath( HKEY root ) : mRoot( root ), mPathKey( 0 ) {
 	std::cout << "[" << buffer << "]" << std::endl;
 }
 
+//----------------------------------------------------------------------------
+// Close the path key opened in ctor.
+//----------------------------------------------------------------------------
+
 RegPath :: ~RegPath() {
 	if ( mPathKey ) {
 		RegCloseKey( mPathKey );
 	}
 }
 
+//----------------------------------------------------------------------------
+// How many directories on path?
+//----------------------------------------------------------------------------
+
 unsigned int RegPath :: Count() const {
 	return mPath.size();
 }
 
+//----------------------------------------------------------------------------
+// Get zero-based directory
+//----------------------------------------------------------------------------
+
 string RegPath :: At( unsigned int  i) const {
 	return mPath.at( i );
 }
+
+//----------------------------------------------------------------------------
+// Helper to split path at ';' character
+//----------------------------------------------------------------------------
 
 void RegPath :: SplitPath( const std::string & path ) {
 	string::size_type pos = 0;
@@ -72,16 +92,28 @@ void RegPath :: SplitPath( const std::string & path ) {
 	}
 }
 
-bool RegPath :: Find( const string & apath ) const {
+//----------------------------------------------------------------------------
+// See if path contains adir
+//----------------------------------------------------------------------------
 
-	return std::find( mPath.begin(), mPath.end(), apath ) != mPath.end();
+bool RegPath :: Find( const string & adir ) const {
+
+	return std::find( mPath.begin(), mPath.end(), adir ) != mPath.end();
 }
 
-bool RegPath :: Add( const string & apath ) {
-	mPath.push_back( apath );
+//----------------------------------------------------------------------------
+// Add directory to path - no check for multiple adds of same directory
+//----------------------------------------------------------------------------
+
+bool RegPath :: Add( const string & adir ) {
+	mPath.push_back( adir );
 	UpdateReg();
 	return true;
 }
+
+//----------------------------------------------------------------------------
+// Helper to update registry with current path.
+//----------------------------------------------------------------------------
 
 void RegPath :: UpdateReg() {
 	string newpath;
@@ -96,8 +128,12 @@ void RegPath :: UpdateReg() {
 	}
 }
 
-bool RegPath :: Remove( const string & apath ) {
-	VecType::iterator it = std::find( mPath.begin(), mPath.end(), apath );
+//----------------------------------------------------------------------------
+// Remove single instance of adir from path, updating registry.
+//----------------------------------------------------------------------------
+
+bool RegPath :: Remove( const string & adir ) {
+	VecType::iterator it = std::find( mPath.begin(), mPath.end(), adir );
 	if ( it != mPath.end() ) {
 		mPath.erase( it );
 	}
