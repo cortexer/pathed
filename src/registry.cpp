@@ -7,6 +7,7 @@
 //----------------------------------------------------------------------------
 
 #include <iostream>
+#include <algorithm>
 #include "registry.h"
 #include "error.h"
 using std::string;
@@ -70,3 +71,33 @@ void RegPath :: SplitPath( const std::string & path ) {
 		}
 	}
 }
+
+bool RegPath :: Find( const string & apath ) const {
+
+	return std::find( mPath.begin(), mPath.end(), apath ) != mPath.end();
+}
+
+bool RegPath :: Add( const string & apath ) {
+
+	string newpath;
+	for ( unsigned int i = 0; i < mPath.size(); i++ ) {
+		newpath += mPath[i] + ";";
+	}
+	newpath += apath;
+
+	long res = RegSetValueEx( mPathKey, "PATH", 0, REG_EXPAND_SZ,
+								(BYTE *)newpath.c_str(), newpath.size() + 1 );
+	if ( res == ERROR_SUCCESS ) {
+		mPath.push_back( apath );
+	}
+	else {
+		throw Error( "Could not add " + apath + " to path" );
+	}
+	return true;
+}
+
+bool RegPath :: Remove( const string & apath ) {
+	return true;
+}
+
+

@@ -23,6 +23,7 @@ class RegPath {
 		unsigned int Count() const;
 		std::string At( unsigned int  i ) const;
 
+		bool Find( const std::string & apath ) const;
 		bool Add( const std::string & apath );
 		bool Remove( const std::string & apath );
 
