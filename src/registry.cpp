@@ -13,8 +13,8 @@
 using std::string;
 
 //----------------------------------------------------------------------------
-// Create a RegPath object from a registry key, which must be either 
-// HKEY_CURRENT_USER or HKEY_LOCAL_MACHINE. 
+// Create a RegPath object from a registry key, which must be either
+// HKEY_CURRENT_USER or HKEY_LOCAL_MACHINE.
 //----------------------------------------------------------------------------
 
 RegPath :: RegPath( HKEY root ) : mRoot( root ), mPathKey( 0 ) {
@@ -39,7 +39,7 @@ RegPath :: RegPath( HKEY root ) : mRoot( root ), mPathKey( 0 ) {
 	}
 	buffer[ bufflen ] = 0;
 	SplitPath( (const char *) buffer );
-	std::cout << "[" << buffer << "]" << std::endl;
+//	std::cout << "[" << buffer << "]" << std::endl;
 }
 
 //----------------------------------------------------------------------------
