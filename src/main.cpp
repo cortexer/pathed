@@ -120,6 +120,31 @@ int FindPath( CmdLine & cl ) {
 }
 
 //----------------------------------------------------------------------------
+// Display help
+//----------------------------------------------------------------------------
+
+void Help() {
+
+	cout <<
+
+	"pathed is a command-line tool for changing the Windows path in the registry\n"
+	"Copyright (C) 2011 Neil Butterworth\n\n"
+	"usage: pathed [-a | -r | -l  | -q ] [-s] [-f] [dir]\n\n"
+	"pathed -a dir    adds dir to the path in  the registry\n"
+	"pathed -r dir    removes  dir from the path in the registry\n"
+	"pathed -l        lists the entries on the current path\n"
+	"pathed -q dir    queries registry, returns 0 if dir is on path, 1 otherwise\n\n"
+	"By default, pathed works on the path in HKEY_CURRENT_USER. You can make it use\n"
+	"the system path in HKEY_LOCAL_MACHINE by using the -s flag.\n\n"
+	"Normally, pathed will check a directory exists on disk before adding it to the\n"
+	"path. To prevent this, use the -f flag.\n\n"
+	"AS WITH ALL COMMANDS THAT CHANGE THE REGISTRY, PATHED CAN CAUSE DAMAGE IF YOU\n"
+	"DO NOT KNOW WHAT YOU ARE DOING. IF IN DOUBT, DO NOT USE IT!\n"
+
+	<< endl;
+}
+
+//----------------------------------------------------------------------------
 // Main for pathed
 //----------------------------------------------------------------------------
 
@@ -131,7 +156,8 @@ int main( int argc, char *argv[] )
 		SetFlags( cl );
 
 		if ( cl.Argc() == 1 && ! List ) {
-			throw Error( "Usage: add2path [[-r] [-s] [-e] path]" );
+			Help();
+			return 0;
 		}
 		else if ( ! (List || Add || QueryPath || Remove )  ) {
 			throw Error( "Need one of -a, -r, -l or -q" );
