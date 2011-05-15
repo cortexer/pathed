@@ -23,13 +23,15 @@ const char * const SYS_FLAG = "-s";			// use system instead of user path
 const char * const EXIST_FLAG = "-f";		// check path exists on disk
 const char * const LIST_FLAG = "-l";		// list current path
 const char * const QUERY_FLAG = "-q";		// list current path
+const char * const VERIFY_FLAG = "-v";		// verify path
 
 static bool Remove = false,
 			Add = false,
 			UseSys = false,
 			List = false,
 			CheckExist = true,
-			QueryPath = false;
+			QueryPath = false,
+			Verify = false;
 
 //----------------------------------------------------------------------------
 // Set flags from the command line, shifting them off as they are set.
@@ -56,6 +58,9 @@ void SetFlags( CmdLine & cl ) {
 			}
 			else if ( s == QUERY_FLAG ) {
 				QueryPath = true;
+			}
+			else if ( s == VERIFY_FLAG ) {
+				Verify = true;
 			}
 			else {
 				throw Error( "Invalid flag: " + s );
@@ -120,6 +125,27 @@ int FindPath( CmdLine & cl ) {
 }
 
 //----------------------------------------------------------------------------
+// Verify directories on path exist.
+//----------------------------------------------------------------------------
+
+int VerifyPath() {
+	RegPath path( UseSys ? HKEY_LOCAL_MACHINE : HKEY_CURRENT_USER );
+	int bad = 0;
+	for ( unsigned int i = 0; i < path.Count(); i++ ) {
+		DWORD attr = GetFileAttributes( path.At(i).c_str() );
+		if ( attr == INVALID_FILE_ATTRIBUTES ) {
+			cout << "No such directory: " << path.At(i) << "\n";
+			bad++;
+		}
+		else if ( ! (attr & FILE_ATTRIBUTE_DIRECTORY ) ) {
+			cout << "Not a directory: " << path.At(i) << "\n";
+			bad++;
+		}
+	}
+	return bad == 0 ? 0 : 1;
+}
+
+//----------------------------------------------------------------------------
 // Display help
 //----------------------------------------------------------------------------
 
@@ -128,12 +154,14 @@ void Help() {
 	cout <<
 
 	"pathed is a command-line tool for changing the Windows path in the registry\n"
+	"Version 0.1\n"
 	"Copyright (C) 2011 Neil Butterworth\n\n"
-	"usage: pathed [-a | -r | -l  | -q ] [-s] [-f] [dir]\n\n"
+	"usage: pathed [-a | -r | -l  | -q | -v] [-s] [-f] [dir]\n\n"
 	"pathed -a dir    adds dir to the path in  the registry\n"
 	"pathed -r dir    removes  dir from the path in the registry\n"
 	"pathed -l        lists the entries on the current path\n"
-	"pathed -q dir    queries registry, returns 0 if dir is on path, 1 otherwise\n\n"
+	"pathed -q dir    queries registry, returns 0 if dir is on path, 1 otherwise\n"
+	"pathed -v        verifies that all directories on the path exist\n\n"
 	"By default, pathed works on the path in HKEY_CURRENT_USER. You can make it use\n"
 	"the system path in HKEY_LOCAL_MACHINE by using the -s flag.\n\n"
 	"Normally, pathed will check a directory exists on disk before adding it to the\n"
@@ -155,16 +183,19 @@ int main( int argc, char *argv[] )
 
 		SetFlags( cl );
 
-		if ( cl.Argc() == 1 && ! List ) {
+		if ( cl.Argc() == 1 && ! ( List || Verify) ) {
 			Help();
 			return 0;
 		}
-		else if ( ! (List || Add || QueryPath || Remove )  ) {
-			throw Error( "Need one of -a, -r, -l or -q" );
+		else if ( ! (List || Add || QueryPath || Remove || Verify)  ) {
+			throw Error( "Need one of -a, -r, -l, -q or -v" );
 		}
 
 		if ( List ) {
 			ListPath();
+		}
+		else if ( Verify ) {
+			return VerifyPath();
 		}
 		else if ( QueryPath ) {
 			return FindPath( cl );
