@@ -22,9 +22,15 @@ RegPath :: RegPath( HKEY root ) : mRoot( root ), mPathKey( 0 ) {
 	if ( mRoot == HKEY_CURRENT_USER ) {
 		res = RegOpenKeyEx( mRoot, "Environment", 0, KEY_ALL_ACCESS, & mPathKey);
 	}
-	else {
-		throw Error( "not yet implemented ") ;
+	else if ( mRoot == HKEY_LOCAL_MACHINE ) {
+		res = RegOpenKeyEx( mRoot,
+				"SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment",
+				0, KEY_ALL_ACCESS, & mPathKey);
 	}
+	else {
+		throw Error( "Invalid root key in RegPath") ;
+	}
+
 	if ( res != ERROR_SUCCESS ) {
 		throw Error( "Could not get registry key - " + LastWinError() );
 	}
@@ -140,5 +146,8 @@ bool RegPath :: Remove( const string & adir ) {
 	UpdateReg();
 	return true;
 }
+
+
+// end
 
 
