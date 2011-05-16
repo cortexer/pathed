@@ -1,0 +1,14 @@
+PE=../bin/Debug/pathed.exe
+
+if $PE -q -s 'C:\bin'
+then
+	echo "-q passed (1)"
+else
+	echo "-q failed (1)"
+fi
+if $PE -q -s 'C:\xxxxxxxxxxxxxxxxxxxxxxxxx'
+then
+	echo "-q failed (2)"
+else
+	echo "-q passed (2)"
+fi
