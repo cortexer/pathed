@@ -38,8 +38,10 @@
 		<Unit filename="inc\cmdline.h" />
 		<Unit filename="inc\error.h" />
 		<Unit filename="inc\registry.h" />
+		<Unit filename="inc\util.h" />
 		<Unit filename="src\main.cpp" />
 		<Unit filename="src\registry.cpp" />
+		<Unit filename="src\util.cpp" />
 		<Extensions>
 			<code_completion />
 			<envvars />
