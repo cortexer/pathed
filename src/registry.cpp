@@ -11,6 +11,8 @@
 #include <string.h>
 #include "registry.h"
 #include "error.h"
+#include "util.h"
+
 using std::string;
 
 //----------------------------------------------------------------------------
@@ -121,10 +123,11 @@ static bool Same( const std::string & a, const std::string &  b ) {
 // See if path contains adir
 //----------------------------------------------------------------------------
 
-bool RegPath :: Find( const string & adir ) const {
+bool RegPath :: Find( const string & adir, Env ev ) const {
 
 	for ( unsigned int i = 0; i < mPath.size(); i++ ) {
-		if ( Same( mPath[i], adir ) ) {
+		string e = ev == Expand ? ExpandPath( mPath[i] ) : mPath[i];
+		if ( Same( e, adir ) ) {
 			return true;
 		}
 	}

@@ -17,13 +17,15 @@ class RegPath {
 
 	public:
 
+		enum Env { Expand, NoExpand };
+
 		RegPath( HKEY root );
 		~RegPath();
 
 		unsigned int Count() const;
 		std::string At( unsigned int  i ) const;
 
-		bool Find( const std::string & apath ) const;
+		bool Find( const std::string & apath,  Env ev ) const;
 		bool Add( const std::string & apath );
 		bool Remove( const std::string & apath );
 

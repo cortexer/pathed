@@ -103,7 +103,7 @@ void AddPath( CmdLine & cl ) {
 	}
 
 	RegPath path( UseSys ? HKEY_LOCAL_MACHINE : HKEY_CURRENT_USER );
-	if ( path.Find( cl.Argv(1) ) ) {
+	if ( path.Find( cl.Argv(1), RegPath::NoExpand ) ) {
 		throw Error( cl.Argv(1) + " is already on the path" );
 	}
 	path.Add( cl.Argv(1) );
@@ -115,7 +115,7 @@ void AddPath( CmdLine & cl ) {
 
 void RemovePath( CmdLine & cl ) {
 	RegPath path( UseSys ? HKEY_LOCAL_MACHINE : HKEY_CURRENT_USER );
-	if ( ! path.Find( cl.Argv(1) ) ) {
+	if ( ! path.Find( cl.Argv(1) , RegPath::NoExpand ) ) {
 		throw Error( cl.Argv(1) + " is not on the path" );
 	}
 	path.Remove( cl.Argv(1) );
@@ -127,7 +127,7 @@ void RemovePath( CmdLine & cl ) {
 
 int FindPath( CmdLine & cl ) {
 	RegPath path( UseSys ? HKEY_LOCAL_MACHINE : HKEY_CURRENT_USER );
-	return  path.Find( cl.Argv(1) ) ? 0 : 1;
+	return  path.Find( cl.Argv(1), Expand ? RegPath::Expand : RegPath::NoExpand ) ? 0 : 1;
 }
 
 //----------------------------------------------------------------------------
@@ -138,7 +138,7 @@ int VerifyPath() {
 	RegPath path( UseSys ? HKEY_LOCAL_MACHINE : HKEY_CURRENT_USER );
 	int bad = 0;
 	for ( unsigned int i = 0; i < path.Count(); i++ ) {
-		string epath = Expand ? ExpandPath( path.At(i) ) : path.At(i);
+		string epath = ExpandPath( path.At(i) );
 		DWORD attr = GetFileAttributes( epath.c_str() );
 		if ( attr == INVALID_FILE_ATTRIBUTES ) {
 			cout << "No such directory: " << epath << "\n";
