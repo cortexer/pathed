@@ -8,6 +8,7 @@
 
 #include <iostream>
 #include <algorithm>
+#include <string.h>
 #include "registry.h"
 #include "error.h"
 using std::string;
@@ -99,12 +100,35 @@ void RegPath :: SplitPath( const std::string & path ) {
 }
 
 //----------------------------------------------------------------------------
+// As stricmp seems to have disappeared....
+//----------------------------------------------------------------------------
+
+static bool Same( const std::string & a, const std::string &  b ) {
+	if ( a.size() == b.size() ) {
+		for ( unsigned int i = 0; i < a.size(); i++ ) {
+			if ( toupper( a[i] ) != toupper( b[i] )) {
+				return false;
+			}
+		}
+		return true;
+	}
+	else {
+		return false;
+	}
+}
+
+//----------------------------------------------------------------------------
 // See if path contains adir
 //----------------------------------------------------------------------------
 
 bool RegPath :: Find( const string & adir ) const {
 
-	return std::find( mPath.begin(), mPath.end(), adir ) != mPath.end();
+	for ( unsigned int i = 0; i < mPath.size(); i++ ) {
+		if ( Same( mPath[i], adir ) ) {
+			return true;
+		}
+	}
+	return false;
 }
 
 //----------------------------------------------------------------------------
