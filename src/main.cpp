@@ -24,6 +24,7 @@ const char * const EXIST_FLAG = "-f";		// check path exists on disk
 const char * const LIST_FLAG = "-l";		// list current path
 const char * const QUERY_FLAG = "-q";		// list current path
 const char * const VERIFY_FLAG = "-v";		// verify path
+const char * const EXPAND_FLAG = "-x";		// expand path
 
 static bool Remove = false,
 			Add = false,
@@ -31,7 +32,8 @@ static bool Remove = false,
 			List = false,
 			CheckExist = true,
 			QueryPath = false,
-			Verify = false;
+			Verify = false,
+			Expand = false;
 
 //----------------------------------------------------------------------------
 // Set flags from the command line, shifting them off as they are set.
@@ -49,6 +51,9 @@ void SetFlags( CmdLine & cl ) {
 			}
 			else if ( s == SYS_FLAG ) {
 				UseSys = true;
+			}
+			else if ( s == EXPAND_FLAG ) {
+				Expand = true;
 			}
 			else if ( s == EXIST_FLAG ) {
 				CheckExist = false;
@@ -74,13 +79,55 @@ void SetFlags( CmdLine & cl ) {
 }
 
 //----------------------------------------------------------------------------
+// Get env var value
+//----------------------------------------------------------------------------
+
+string GetEnv( const string &  name ) {
+	const char * val = getenv( name.c_str() );
+	return val == 0 ? "" : val;
+}
+
+//----------------------------------------------------------------------------
+// Expand occurrences of %X% in the path name with the relevant environment
+// variable setting.
+//----------------------------------------------------------------------------
+
+string ExpandPath( const std::string &  adir ) {
+	string rv, envname;
+	bool inenv = false;
+	unsigned int i = 0;
+	while( i < adir.size() ) {
+		char c = adir[i++];
+		if ( c == '%' && inenv ) {
+			rv += GetEnv( envname );
+			inenv = false;
+			envname = "";
+		}
+		else if ( c == '%' && ! inenv ) {
+			envname = "";
+			inenv = true;
+		}
+		else if ( inenv ) {
+			envname += c;
+		}
+		else {
+			rv += c;
+		}
+	}
+	if ( envname != "" ) {
+		rv += GetEnv( envname );
+	}
+	return rv;
+}
+
+//----------------------------------------------------------------------------
 // List PATH to stdout, one directory per line
 //----------------------------------------------------------------------------
 
 void ListPath() {
 	RegPath path( UseSys ? HKEY_LOCAL_MACHINE : HKEY_CURRENT_USER );
 	for ( unsigned int i = 0; i < path.Count(); i++ ) {
-		cout << path.At(i) << "\n";
+		cout << ( Expand ? ExpandPath( path.At(i) ) : path.At(i) ) << "\n";
 	}
 }
 
@@ -132,13 +179,14 @@ int VerifyPath() {
 	RegPath path( UseSys ? HKEY_LOCAL_MACHINE : HKEY_CURRENT_USER );
 	int bad = 0;
 	for ( unsigned int i = 0; i < path.Count(); i++ ) {
-		DWORD attr = GetFileAttributes( path.At(i).c_str() );
+		string epath = Expand ? ExpandPath( path.At(i) ) : path.At(i);
+		DWORD attr = GetFileAttributes( epath.c_str() );
 		if ( attr == INVALID_FILE_ATTRIBUTES ) {
-			cout << "No such directory: " << path.At(i) << "\n";
+			cout << "No such directory: " << epath << "\n";
 			bad++;
 		}
 		else if ( ! (attr & FILE_ATTRIBUTE_DIRECTORY ) ) {
-			cout << "Not a directory: " << path.At(i) << "\n";
+			cout << "Not a directory: " << epath << "\n";
 			bad++;
 		}
 	}
@@ -156,7 +204,7 @@ void Help() {
 	"pathed is a command-line tool for changing the Windows path in the registry\n"
 	"Version 0.1\n"
 	"Copyright (C) 2011 Neil Butterworth\n\n"
-	"usage: pathed [-a | -r | -l  | -q | -v] [-s] [-f] [dir]\n\n"
+	"usage: pathed [-a | -r | -l  | -q | -v] [-s] [-f]  [-x] [dir]\n\n"
 	"pathed -a dir    adds dir to the path in  the registry\n"
 	"pathed -r dir    removes  dir from the path in the registry\n"
 	"pathed -l        lists the entries on the current path\n"
@@ -166,6 +214,8 @@ void Help() {
 	"the system path in HKEY_LOCAL_MACHINE by using the -s flag.\n\n"
 	"Normally, pathed will check a directory exists on disk before adding it to the\n"
 	"path. To prevent this, use the -f flag.\n\n"
+	"Paths conting environment variables such as %systemroot% will not normally have\n"
+	"the variables expanded to their values. To expand them, use the -x flag\n\n"
 	"AS WITH ALL COMMANDS THAT CHANGE THE REGISTRY, PATHED CAN CAUSE DAMAGE IF YOU\n"
 	"DO NOT KNOW WHAT YOU ARE DOING. IF IN DOUBT, DO NOT USE IT!\n"
 
