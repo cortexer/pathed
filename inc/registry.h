@@ -6,8 +6,8 @@
 // Copyright (C) 2011 Neil Butterworth
 //----------------------------------------------------------------------------
 
-#ifndef INV_A2P_REGISTRY_H
-#define INV_A2P_REGISTRY_H
+#ifndef INV_PATHED_REGISTRY_H
+#define INV_PATHED_REGISTRY_H
 
 #include <windows.h>
 #include <string>

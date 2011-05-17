@@ -7,8 +7,8 @@
 // Copyright (C) 2011 Neil Butterworth
 //----------------------------------------------------------------------------
 
-#ifndef INC_A2P_CMDLINE_H
-#define INC_A2P_CMDLINE_H
+#ifndef INC_PATHED_CMDLINE_H
+#define INC_PATHED_CMDLINE_H
 
 #include <vector>
 #include <string>

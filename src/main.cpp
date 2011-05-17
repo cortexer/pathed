@@ -173,7 +173,7 @@ void Help() {
 	"the system path in HKEY_LOCAL_MACHINE by using the -s flag.\n\n"
 	"Normally, pathed will check a directory exists on disk before adding it to the\n"
 	"path. To prevent this, use the -f flag.\n\n"
-	"Paths conting environment variables such as %systemroot% will not normally have\n"
+	"Paths containing environment variables such as %systemroot% will not normally have\n"
 	"the variables expanded to their values. To expand them, use the -x flag\n\n"
 	"AS WITH ALL COMMANDS THAT CHANGE THE REGISTRY, PATHED CAN CAUSE DAMAGE IF YOU\n"
 	"DO NOT KNOW WHAT YOU ARE DOING. IF IN DOUBT, DO NOT USE IT!\n"

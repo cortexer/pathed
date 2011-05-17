@@ -6,8 +6,8 @@
 // Copyright (C) 2011 Neil Butterworth
 //----------------------------------------------------------------------------
 
-#ifndef INC_A2P_ERROR_H
-#define INC_A2P_ERROR_H
+#ifndef INC_PATHED_ERROR_H
+#define INC_PATHED_ERROR_H
 
 #include <windows.h>
 #include <exception>

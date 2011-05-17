@@ -46,6 +46,7 @@ clean:
 
 $(PROG_REL): $(OBJFILES_REL)
 	$(CC)  $(OBJFILES_REL) -o $(PROG_REL)
+	strip $(PROG_REL)
 	@echo "----  created release binary ----"
 
 
