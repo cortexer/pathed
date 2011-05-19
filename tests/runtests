@@ -1,3 +1,5 @@
+#set -x
+
 PE=../bin/Debug/pathed.exe
 
 if $PE -q -s 'C:\bin'
@@ -11,4 +13,31 @@ then
 	echo "-q failed (2)"
 else
 	echo "-q passed (2)"
+fi
+
+NAFF='xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
+
+if $PE -r $NAFF 2> /dev/null
+then
+	echo "-r passed "
+else
+	echo "-r did not remove - probably ok"
+fi
+
+if $PE -a $NAFF 2> /dev/null
+then
+	echo "-a failed (added non-existent)"
+else
+    if $PE -a -f $NAFF 2> /dev/null
+    then
+		echo "-a -f passed (adding non-existent)"
+		if $PE -r $NAFF
+		then
+			echo "-r passed"
+		else
+			echo "-r failed"
+		fi
+	else
+		echo "-a -f failed"
+	fi
 fi
