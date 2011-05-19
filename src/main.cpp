@@ -18,7 +18,7 @@ using namespace std;
 // Flags controling behaviour in various ways.
 //----------------------------------------------------------------------------
 
-const char * const ADD_FLAG = "-r";			// add to path
+const char * const ADD_FLAG = "-a";			// add to path
 const char * const REM_FLAG = "-r";			// remove from path
 const char * const SYS_FLAG = "-s";			// use system instead of user path
 const char * const EXIST_FLAG = "-f";		// check path exists on disk
