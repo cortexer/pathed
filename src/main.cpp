@@ -107,6 +107,7 @@ void AddPath( CmdLine & cl ) {
 		throw Error( cl.Argv(1) + " is already on the path" );
 	}
 	path.Add( cl.Argv(1) );
+	SendMessageTimeout( HWND_BROADCAST, WM_SETTINGCHANGE, 0, 0, SMTO_ABORTIFHUNG, 0, 0  );
 }
 
 //----------------------------------------------------------------------------
@@ -119,6 +120,7 @@ void RemovePath( CmdLine & cl ) {
 		throw Error( cl.Argv(1) + " is not on the path" );
 	}
 	path.Remove( cl.Argv(1) );
+	SendMessageTimeout( HWND_BROADCAST, WM_SETTINGCHANGE, 0, 0, SMTO_ABORTIFHUNG, 0, 0  );
 }
 
 //----------------------------------------------------------------------------
