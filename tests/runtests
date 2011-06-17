@@ -41,3 +41,12 @@ else
 		echo "-a failed" -f
 	fi
 fi
+
+$PE -a $NAFF -f
+$PE -p > /dev/null
+if $PE -q $NAFF
+then
+	echo "-p failed"
+else
+	echo "-p passed"
+fi
