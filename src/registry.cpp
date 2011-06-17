@@ -159,6 +159,7 @@ void RegPath :: UpdateReg() {
 	if ( res != ERROR_SUCCESS ) {
 		throw Error( "Could not add update path in registry - " + LastWinError() );
 	}
+	SendMessageTimeout( HWND_BROADCAST, WM_SETTINGCHANGE, 0, 0, SMTO_ABORTIFHUNG, 0, 0  );
 }
 
 //----------------------------------------------------------------------------
@@ -174,6 +175,17 @@ bool RegPath :: Remove( const string & adir ) {
 	return true;
 }
 
+//----------------------------------------------------------------------------
+// Replace entire path
+//----------------------------------------------------------------------------
+
+void RegPath :: ReplaceAll( const string & apath ) {
+	long res = RegSetValueEx( mPathKey, "PATH", 0, REG_EXPAND_SZ,
+								(BYTE *) apath.c_str(), apath.size() + 1 );
+	if ( res != ERROR_SUCCESS ) {
+		throw Error( "Could not add update path in registry - " + LastWinError() );
+	}
+}
 
 // end
 

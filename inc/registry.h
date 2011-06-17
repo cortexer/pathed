@@ -28,6 +28,7 @@ class RegPath {
 		bool Find( const std::string & apath,  Env ev ) const;
 		bool Add( const std::string & apath );
 		bool Remove( const std::string & apath );
+		void ReplaceAll( const std::string & apath );
 
 	private:
 

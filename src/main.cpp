@@ -7,6 +7,7 @@
 //----------------------------------------------------------------------------
 
 #include <iostream>
+#include <set>
 #include "cmdline.h"
 #include "error.h"
 #include "registry.h"
@@ -26,6 +27,7 @@ const char * const LIST_FLAG = "-l";		// list current path
 const char * const QUERY_FLAG = "-q";		// list current path
 const char * const VERIFY_FLAG = "-v";		// verify path
 const char * const EXPAND_FLAG = "-x";		// expand path
+const char * const PRUNE_FLAG = "-p";		// prune path
 
 static bool Remove = false,
 			Add = false,
@@ -34,7 +36,8 @@ static bool Remove = false,
 			CheckExist = true,
 			QueryPath = false,
 			Verify = false,
-			Expand = false;
+			Expand = false,
+			Prune = false;
 
 //----------------------------------------------------------------------------
 // Set flags from the command line, shifting them off as they are set.
@@ -46,6 +49,9 @@ void SetFlags( CmdLine & cl ) {
 		if ( s.size() && s[0] == '-' ) {
 			if ( s == REM_FLAG ) {
 				Remove = true;
+			}
+			else if ( s == PRUNE_FLAG ){
+				Prune = true;
 			}
 			else if ( s == ADD_FLAG ) {
 				Add = true;
@@ -107,7 +113,6 @@ void AddPath( CmdLine & cl ) {
 		throw Error( cl.Argv(1) + " is already on the path" );
 	}
 	path.Add( cl.Argv(1) );
-	SendMessageTimeout( HWND_BROADCAST, WM_SETTINGCHANGE, 0, 0, SMTO_ABORTIFHUNG, 0, 0  );
 }
 
 //----------------------------------------------------------------------------
@@ -120,7 +125,49 @@ void RemovePath( CmdLine & cl ) {
 		throw Error( cl.Argv(1) + " is not on the path" );
 	}
 	path.Remove( cl.Argv(1) );
-	SendMessageTimeout( HWND_BROADCAST, WM_SETTINGCHANGE, 0, 0, SMTO_ABORTIFHUNG, 0, 0  );
+}
+
+//----------------------------------------------------------------------------
+// Prune duplicates and non-existent dirs from path
+//----------------------------------------------------------------------------
+
+void PrunePath( CmdLine &  ) {
+	RegPath path( UseSys ? HKEY_LOCAL_MACHINE : HKEY_CURRENT_USER );
+
+	typedef std::set <string> DirSet;
+	DirSet uniq;
+	std::vector <string> ordered;
+
+	for ( unsigned int i = 0; i < path.Count(); i++ ) {
+		string dir = path.At( i );
+		std::pair<DirSet::iterator, bool> ok = uniq.insert( dir );
+		if ( ok.second ) {
+			ordered.push_back( dir );
+		}
+		else {
+			cout << "Pruned: " << dir << endl;
+		}
+	}
+
+	string entry;
+
+	for ( unsigned int i = 0; i < ordered.size(); i++ ) {
+		string dir = ExpandPath( ordered[i] );
+		DWORD attr = GetFileAttributes( dir.c_str() );
+		if ( attr == INVALID_FILE_ATTRIBUTES ||
+						! (attr & FILE_ATTRIBUTE_DIRECTORY ) ) {
+			cout << "Pruned: " << ordered[i] << endl;
+		}
+		else {
+			if ( entry != "" ) {
+				entry += ";";
+			}
+			entry += ordered[i];
+		}
+
+	}
+	path.ReplaceAll( entry );
+	std::cout << entry << std::endl;
 }
 
 //----------------------------------------------------------------------------
@@ -154,6 +201,7 @@ int VerifyPath() {
 	return bad == 0 ? 0 : 1;
 }
 
+
 //----------------------------------------------------------------------------
 // Display help
 //----------------------------------------------------------------------------
@@ -163,14 +211,15 @@ void Help() {
 	cout <<
 
 	"pathed is a command-line tool for changing the Windows path in the registry\n"
-	"Version 0.1\n"
+	"Version 0.3\n"
 	"Copyright (C) 2011 Neil Butterworth\n\n"
 	"usage: pathed [-a | -r | -l  | -q | -v] [-s] [-f]  [-x] [dir]\n\n"
 	"pathed -a dir    adds dir to the path in  the registry\n"
 	"pathed -r dir    removes  dir from the path in the registry\n"
 	"pathed -l        lists the entries on the current path\n"
 	"pathed -q dir    queries registry, returns 0 if dir is on path, 1 otherwise\n"
-	"pathed -v        verifies that all directories on the path exist\n\n"
+	"pathed -v        verifies that all directories on the path exist\n"
+	"pathed -p        prunes the path by removing duplicates and non-existent directories\n\n"
 	"By default, pathed works on the path in HKEY_CURRENT_USER. You can make it use\n"
 	"the system path in HKEY_LOCAL_MACHINE by using the -s flag.\n\n"
 	"Normally, pathed will check a directory exists on disk before adding it to the\n"
@@ -194,12 +243,12 @@ int main( int argc, char *argv[] )
 
 		SetFlags( cl );
 
-		if ( cl.Argc() == 1 && ! ( List || Verify) ) {
+		if ( cl.Argc() == 1 && ! ( List || Verify || Prune ) ) {
 			Help();
 			return 0;
 		}
-		else if ( ! (List || Add || QueryPath || Remove || Verify)  ) {
-			throw Error( "Need one of -a, -r, -l, -q or -v" );
+		else if ( ! (List || Add || QueryPath || Remove || Verify || Prune )  ) {
+			throw Error( "Need one of -a, -r, -l, -q, -p or -v" );
 		}
 
 		if ( List ) {
@@ -213,6 +262,9 @@ int main( int argc, char *argv[] )
 		}
 		else if ( Remove ) {
 			RemovePath( cl );
+		}
+		else if ( Prune ) {
+			PrunePath( cl );
 		}
 		else {
 			AddPath( cl );

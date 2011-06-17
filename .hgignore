@@ -7,3 +7,4 @@ obj
 bin
 *.layout
 *.depend
+pathed_build_log.*
