@@ -19,7 +19,7 @@ using namespace std;
 // Command and option names
 //----------------------------------------------------------------------------
 
-enum FlagName { fnNone, fnAdd, fnRemove, fnForce,
+enum FlagName { fnNone, fnAdd, fnRemove, fnForce, fnGrep,
 				fnQuery, fnVerify, fnPrune, fnList, fnSys, fnExpand };
 
 //----------------------------------------------------------------------------
@@ -52,6 +52,7 @@ Flag CmdLineFlags[] = {
 	{ fnSys, 		"-s", "--system", false, 0 },
 	{ fnExpand, 	"-x", "--expand", false, 0 },
 	{ fnForce, 		"-f", "--force", false, 0 },
+	{ fnGrep, 		"-g", "--grep", true, 1 },
 	{ fnNone, NULL, NULL, false, 0 }		// must be last
 };
 
@@ -251,6 +252,31 @@ int FindPath() {
 }
 
 //----------------------------------------------------------------------------
+// Search path for file
+//----------------------------------------------------------------------------
+
+int GrepPath() {
+	if ( CommandParam == "" ) {
+		throw Error( "Need file name" );
+	}
+	RegPath path( UseSys ? HKEY_LOCAL_MACHINE : HKEY_CURRENT_USER );
+	int found = 0;
+	for ( unsigned int i = 0; i < path.Count(); i++ ) {
+		string epath = ExpandPath( path.At(i) );
+		if ( epath == "" || epath[epath.size()-1] != '\\' ) {
+			epath += '\\';
+		}
+		epath += CommandParam;
+		DWORD attr = GetFileAttributes( epath.c_str() );
+		if ( attr != INVALID_FILE_ATTRIBUTES ) {
+			found++;
+			cout << epath << endl;
+		}
+	}
+	return found == 0 ? 1 : 0;
+}
+
+//----------------------------------------------------------------------------
 // Verify directories on path exist.
 //----------------------------------------------------------------------------
 
@@ -281,19 +307,20 @@ void Help() {
 
 	cout <<
 
-	"pathed is a command-line tool for changing the Windows path in the registry\n"
-	"Version 0.5\n"
+	"\npathed is a command-line tool for changing and querying the path in the registry\n\n"
+	"Version 0.6\n"
 	"Copyright (C) 2011 Neil Butterworth\n\n"
-	"usage: pathed [-a | -r | -l  | -q | -v | -p] [-s] [-f]  [-x] [dir]\n\n"
+	"usage: pathed [-a dir | -r dir | -l | -q dir | -v | -p | -g file] [-s] [-f] [-x] \n\n"
 	"pathed -a dir    adds dir to the path in  the registry\n"
 	"pathed -r dir    removes  dir from the path in the registry\n"
 	"pathed -l        lists the entries on the current path\n"
 	"pathed -q dir    queries registry, returns 0 if dir is on path, 1 otherwise\n"
+	"pathed -g file   searches (greps) the path for all occurrences of file\n"
 	"pathed -v        verifies that all directories on the path exist\n"
 	"pathed -p        prunes the path by removing duplicates and non-existent directories\n\n"
 	"By default, pathed works on the path in HKEY_CURRENT_USER. You can make it use\n"
 	"the system path in HKEY_LOCAL_MACHINE by using the -s flag.\n\n"
-	"Normally, pathed will check a directory exists on disk before adding it to the\n"
+	"Normally pathed will check a directory exists on disk before adding it to the\n"
 	"path. To prevent this, use the -f flag.\n\n"
 	"Paths containing environment variables such as %systemroot% will not normally have\n"
 	"the variables expanded to their values. To expand them, use the -x flag\n\n"
@@ -325,6 +352,7 @@ int main( int argc, char *argv[] )
 			case fnList:	ListPath(); break;
 			case fnVerify:	return VerifyPath(); break;
 			case fnPrune:	PrunePath(); break;
+			case fnGrep:	GrepPath(); break;
 			default:		throw Error( "bad command switch" );
 		}
 
