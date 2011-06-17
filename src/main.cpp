@@ -16,74 +16,135 @@
 using namespace std;
 
 //----------------------------------------------------------------------------
-// Flags controling behaviour in various ways.
+// Command and option names
 //----------------------------------------------------------------------------
 
-const char * const ADD_FLAG = "-a";			// add to path
-const char * const REM_FLAG = "-r";			// remove from path
-const char * const SYS_FLAG = "-s";			// use system instead of user path
-const char * const EXIST_FLAG = "-f";		// check path exists on disk
-const char * const LIST_FLAG = "-l";		// list current path
-const char * const QUERY_FLAG = "-q";		// list current path
-const char * const VERIFY_FLAG = "-v";		// verify path
-const char * const EXPAND_FLAG = "-x";		// expand path
-const char * const PRUNE_FLAG = "-p";		// prune path
-
-static bool Remove = false,
-			Add = false,
-			UseSys = false,
-			List = false,
-			CheckExist = true,
-			QueryPath = false,
-			Verify = false,
-			Expand = false,
-			Prune = false;
+enum FlagName { fnNone, fnAdd, fnRemove, fnForce,
+				fnQuery, fnVerify, fnPrune, fnList, fnSys, fnExpand };
 
 //----------------------------------------------------------------------------
-// Set flags from the command line, shifting them off as they are set.
+// Globals set dring command parsing
 //----------------------------------------------------------------------------
 
-void SetFlags( CmdLine & cl ) {
+FlagName CommandName = fnNone;
+bool Expand = false, CheckExist = true, UseSys = false;
+string CommandParam = "";
+
+//----------------------------------------------------------------------------
+// Lookup commands and options via string
+//----------------------------------------------------------------------------
+
+struct Flag {
+	FlagName mName;
+	const char * const mShort;
+	const char * const mLong;
+	bool mCmd;						// is this a command?
+	int mParamCount;				// if so, how many params?
+};
+
+Flag CmdLineFlags[] = {
+	{ fnAdd, 		"-a", "--add", true, 1 },
+	{ fnRemove, 	"-r", "--remove", true, 1 },
+	{ fnList, 		"-l", "--list", true, 0 },
+	{ fnQuery, 		"-q", "--query", true, 1 },
+	{ fnVerify, 	"-v", "--verify", true, 0 },
+	{ fnPrune, 		"-p", "--prune", true, 0 },
+	{ fnSys, 		"-s", "--system", false, 0 },
+	{ fnExpand, 	"-x", "--expand", false, 0 },
+	{ fnForce, 		"-f", "--force", false, 0 },
+	{ fnNone, NULL, NULL, false, 0 }		// must be last
+};
+
+
+//----------------------------------------------------------------------------
+// Get list of commands, separated by commas
+//----------------------------------------------------------------------------
+
+string CommandList() {
+	int i = 0;
+	string cl;
+	while( CmdLineFlags[i].mName != fnNone ) {
+		if ( CmdLineFlags[i].mCmd ) {
+			if ( cl != "" ) {
+				cl += ", ";
+			}
+			cl +=CmdLineFlags[i].mShort;
+		}
+		i++;
+	}
+	return cl;
+}
+
+//----------------------------------------------------------------------------
+// Get flag name from string rep.
+//----------------------------------------------------------------------------
+
+FlagName StringToFlag( const string & s  ) {
+	int i = 0;
+	while( CmdLineFlags[i].mName != fnNone ) {
+		if ( s == CmdLineFlags[i].mShort || s == CmdLineFlags[i].mLong ) {
+			return CmdLineFlags[i].mName;
+		}
+		i++;
+	}
+	return fnNone;
+}
+
+//----------------------------------------------------------------------------
+// Get values associated with an option
+//----------------------------------------------------------------------------
+
+pair <bool,int> GetFlagValues( FlagName f ) {
+	int i = 0;
+	while( CmdLineFlags[i].mName != fnNone ) {
+		if (CmdLineFlags[i].mName == f ) {
+			return make_pair( CmdLineFlags[i].mCmd, CmdLineFlags[i].mParamCount );
+		}
+		i++;
+	}
+	throw "wonky flag ";	// never happen
+}
+
+//----------------------------------------------------------------------------
+// Parse supplied command line, setting globals.
+//----------------------------------------------------------------------------
+
+void ParseCommandLine( CmdLine & cl  ) {
 	while( cl.Argc() > 1 ) {
-		string s = cl.Argv(1);
-		if ( s.size() && s[0] == '-' ) {
-			if ( s == REM_FLAG ) {
-				Remove = true;
+		string sflag = cl.Argv(1);
+		cl.Shift();
+		FlagName fn = StringToFlag( sflag );
+		if ( fn == fnNone ) {
+			throw Error( "Invalid command line option: " + sflag );
+		}
+		pair <bool,int> vals = GetFlagValues( fn );
+		if ( vals.second ) {
+			if ( cl.Argc() == 1 ) {
+				throw Error( "Missing command line parameter for " + sflag );
 			}
-			else if ( s == PRUNE_FLAG ){
-				Prune = true;
+			CommandParam = cl.Argv(1);
+			cl.Shift();
+		}
+		if ( vals.first ) {
+			if ( CommandName != fnNone ) {
+				throw Error( "Only one command option allowed" );
 			}
-			else if ( s == ADD_FLAG ) {
-				Add = true;
-			}
-			else if ( s == SYS_FLAG ) {
-				UseSys = true;
-			}
-			else if ( s == EXPAND_FLAG ) {
-				Expand = true;
-			}
-			else if ( s == EXIST_FLAG ) {
-				CheckExist = false;
-			}
-			else if ( s == LIST_FLAG ) {
-				List = true;
-			}
-			else if ( s == QUERY_FLAG ) {
-				QueryPath = true;
-			}
-			else if ( s == VERIFY_FLAG ) {
-				Verify = true;
-			}
-			else {
-				throw Error( "Invalid flag: " + s );
-			}
-			cl.Shift(1);
+			CommandName = fn;
 		}
 		else {
-			break;
+			switch( fn ) {
+				case fnExpand:		Expand = true; break;
+				case fnForce:		CheckExist = false ; break;
+				case fnSys:			UseSys  = true; break;
+				default:			throw Error( "bad option " );
+			}
 		}
 	}
+	if ( CommandName == fnNone ) {
+		throw Error( "Need one of " + CommandList() );
+	}
 }
+
 
 //----------------------------------------------------------------------------
 // List PATH to stdout, one directory per line
@@ -100,31 +161,37 @@ void ListPath() {
 // Add an entry to the path
 //----------------------------------------------------------------------------
 
-void AddPath( CmdLine & cl ) {
+void AddPath() {
+	if ( CommandParam == "" ) {
+		throw Error( "Need directory to add" );
+	}
 	if ( CheckExist ) {
-		DWORD attr = GetFileAttributes( cl.Argv(1).c_str() );
+		DWORD attr = GetFileAttributes( CommandParam.c_str() );
 		if ( attr == INVALID_FILE_ATTRIBUTES || ! (attr & FILE_ATTRIBUTE_DIRECTORY ) ) {
-			throw Error( "No such directory: " + cl.Argv(1));
+			throw Error( "No such directory: " + CommandParam );
 		}
 	}
 
 	RegPath path( UseSys ? HKEY_LOCAL_MACHINE : HKEY_CURRENT_USER );
-	if ( path.Find( cl.Argv(1), RegPath::NoExpand ) ) {
-		throw Error( cl.Argv(1) + " is already on the path" );
+	if ( path.Find( CommandParam, RegPath::NoExpand ) ) {
+		throw Error( CommandParam + " is already on the path" );
 	}
-	path.Add( cl.Argv(1) );
+	path.Add( CommandParam );
 }
 
 //----------------------------------------------------------------------------
 // Remove entry from the path
 //----------------------------------------------------------------------------
 
-void RemovePath( CmdLine & cl ) {
-	RegPath path( UseSys ? HKEY_LOCAL_MACHINE : HKEY_CURRENT_USER );
-	if ( ! path.Find( cl.Argv(1) , RegPath::NoExpand ) ) {
-		throw Error( cl.Argv(1) + " is not on the path" );
+void RemovePath() {
+	if ( CommandParam == "" ) {
+		throw Error( "Need directory to remove" );
 	}
-	path.Remove( cl.Argv(1) );
+	RegPath path( UseSys ? HKEY_LOCAL_MACHINE : HKEY_CURRENT_USER );
+	if ( ! path.Find( CommandParam , RegPath::NoExpand ) ) {
+		throw Error( CommandParam + " is not on the path" );
+	}
+	path.Remove( CommandParam );
 }
 
 //----------------------------------------------------------------------------
@@ -132,7 +199,7 @@ void RemovePath( CmdLine & cl ) {
 // dupes, but actually work with vector to meaintain path order.
 //----------------------------------------------------------------------------
 
-void PrunePath( CmdLine &  ) {
+void PrunePath() {
 	RegPath path( UseSys ? HKEY_LOCAL_MACHINE : HKEY_CURRENT_USER );
 
 	typedef std::set <string> DirSet;
@@ -175,9 +242,12 @@ void PrunePath( CmdLine &  ) {
 // See if directory is on the path, if so return success code (not boolean!)
 //----------------------------------------------------------------------------
 
-int FindPath( CmdLine & cl ) {
+int FindPath() {
+	if ( CommandParam == "" ) {
+		throw Error( "Need directory name" );
+	}
 	RegPath path( UseSys ? HKEY_LOCAL_MACHINE : HKEY_CURRENT_USER );
-	return  path.Find( cl.Argv(1), Expand ? RegPath::Expand : RegPath::NoExpand ) ? 0 : 1;
+	return  path.Find( CommandParam, Expand ? RegPath::Expand : RegPath::NoExpand ) ? 0 : 1;
 }
 
 //----------------------------------------------------------------------------
@@ -212,7 +282,7 @@ void Help() {
 	cout <<
 
 	"pathed is a command-line tool for changing the Windows path in the registry\n"
-	"Version 0.4\n"
+	"Version 0.5\n"
 	"Copyright (C) 2011 Neil Butterworth\n\n"
 	"usage: pathed [-a | -r | -l  | -q | -v | -p] [-s] [-f]  [-x] [dir]\n\n"
 	"pathed -a dir    adds dir to the path in  the registry\n"
@@ -241,34 +311,21 @@ int main( int argc, char *argv[] )
 {
 	try {
 		CmdLine cl( argc, argv );
-
-		SetFlags( cl );
-
-		if ( cl.Argc() == 1 && ! ( List || Verify || Prune ) ) {
+		if ( cl.Argc() == 1 ) {
 			Help();
 			return 0;
 		}
-		else if ( ! (List || Add || QueryPath || Remove || Verify || Prune )  ) {
-			throw Error( "Need one of -a, -r, -l, -q, -p or -v" );
-		}
 
-		if ( List ) {
-			ListPath();
-		}
-		else if ( Verify ) {
-			return VerifyPath();
-		}
-		else if ( QueryPath ) {
-			return FindPath( cl );
-		}
-		else if ( Remove ) {
-			RemovePath( cl );
-		}
-		else if ( Prune ) {
-			PrunePath( cl );
-		}
-		else {
-			AddPath( cl );
+		ParseCommandLine( cl );
+
+		switch( CommandName ) {
+			case fnAdd:		AddPath(); break;
+			case fnRemove:	RemovePath(); break;
+			case fnQuery:	return FindPath();
+			case fnList:	ListPath(); break;
+			case fnVerify:	return VerifyPath(); break;
+			case fnPrune:	PrunePath(); break;
+			default:		throw Error( "bad command switch" );
 		}
 
 		return 0;

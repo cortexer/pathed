@@ -2,13 +2,13 @@
 
 PE=../bin/Debug/pathed.exe
 
-if $PE -q -s 'C:\bin'
+if $PE -q  'C:\bin' -s
 then
 	echo "-q passed (1)"
 else
 	echo "-q failed (1)"
 fi
-if $PE -q -s 'C:\xxxxxxxxxxxxxxxxxxxxxxxxx'
+if $PE -q 'C:\xxxxxxxxxxxxxxxxxxxxxxxxx' -s
 then
 	echo "-q failed (2)"
 else
@@ -28,7 +28,7 @@ if $PE -a $NAFF 2> /dev/null
 then
 	echo "-a failed (added non-existent)"
 else
-    if $PE -a -f $NAFF 2> /dev/null
+    if $PE -a $NAFF -f  2> /dev/null
     then
 		echo "-a -f passed (adding non-existent)"
 		if $PE -r $NAFF
@@ -38,6 +38,6 @@ else
 			echo "-r failed"
 		fi
 	else
-		echo "-a -f failed"
+		echo "-a failed" -f
 	fi
 fi
