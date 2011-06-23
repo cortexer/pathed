@@ -20,7 +20,7 @@ using namespace std;
 //----------------------------------------------------------------------------
 
 enum FlagName { fnNone, fnAdd, fnRemove, fnForce, fnGrep,
-				fnQuery, fnVerify, fnPrune, fnList, fnSys, fnExpand };
+				fnQuery, fnVerify, fnPrune, fnList, fnSys, fnExpand, fnEnv };
 
 //----------------------------------------------------------------------------
 // Globals set dring command parsing
@@ -53,6 +53,7 @@ Flag CmdLineFlags[] = {
 	{ fnExpand, 	"-x", "--expand", false, 0 },
 	{ fnForce, 		"-f", "--force", false, 0 },
 	{ fnGrep, 		"-g", "--grep", true, 1 },
+	{ fnEnv,		"-e", "--env", true, 0 },
 	{ fnNone, NULL, NULL, false, 0 }		// must be last
 };
 
@@ -277,6 +278,28 @@ int GrepPath() {
 }
 
 //----------------------------------------------------------------------------
+// List path in PATH environment variable - flags have no effect.
+//----------------------------------------------------------------------------
+
+int EnvPath() {
+	const char * p = getenv( "PATH" );
+	if ( p == 0 ) {
+		throw Error( "No PATH variable in environment!" );
+	}
+	while( * p ) {
+		if ( * p == ';' ) {
+			cout << '\n';
+		}
+		else {
+			cout << * p;
+		}
+		p++;
+	}
+	cout << endl;
+	return 0;
+}
+
+//----------------------------------------------------------------------------
 // Verify directories on path exist.
 //----------------------------------------------------------------------------
 
@@ -308,12 +331,13 @@ void Help() {
 	cout <<
 
 	"\npathed is a command-line tool for changing and querying the path in the registry\n\n"
-	"Version 0.7\n"
+	"Version 0.8\n"
 	"Copyright (C) 2011 Neil Butterworth\n\n"
-	"usage: pathed [-a dir | -r dir | -l | -q dir | -v | -p | -g file] [-s] [-f] [-x] \n\n"
+	"usage: pathed [-a dir | -r dir | -e | -l | -q dir | -v | -p | -g file] [-s] [-f] [-x] \n\n"
 	"pathed -a dir    adds dir to the path in  the registry\n"
 	"pathed -r dir    removes  dir from the path in the registry\n"
-	"pathed -l        lists the entries on the current path\n"
+	"pathed -l        lists the entries on the current path in the registry\n"
+	"pathed -e        lists the entries on the current path in the PATH environment variable\n"
 	"pathed -q dir    queries registry, returns 0 if dir is on path, 1 otherwise\n"
 	"pathed -g file   searches (greps) the path for all occurrences of file\n"
 	"pathed -v        verifies that all directories on the path exist\n"
@@ -353,6 +377,7 @@ int main( int argc, char *argv[] )
 			case fnVerify:	return VerifyPath(); break;
 			case fnPrune:	PrunePath(); break;
 			case fnGrep:	GrepPath(); break;
+			case fnEnv:	    EnvPath(); break;
 			default:		throw Error( "bad command switch" );
 		}
 

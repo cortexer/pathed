@@ -161,7 +161,6 @@ void RegPath :: UpdateReg() {
 	}
 	const char * what = "Environment";
 	DWORD rv;
-	std::cout << "broadcast change" << std::endl;
 	SendMessageTimeout( HWND_BROADCAST, WM_SETTINGCHANGE, 0,
 							(LPARAM) what, SMTO_ABORTIFHUNG, 5000, & rv );
 }
