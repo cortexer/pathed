@@ -308,7 +308,7 @@ void Help() {
 	cout <<
 
 	"\npathed is a command-line tool for changing and querying the path in the registry\n\n"
-	"Version 0.6\n"
+	"Version 0.7\n"
 	"Copyright (C) 2011 Neil Butterworth\n\n"
 	"usage: pathed [-a dir | -r dir | -l | -q dir | -v | -p | -g file] [-s] [-f] [-x] \n\n"
 	"pathed -a dir    adds dir to the path in  the registry\n"

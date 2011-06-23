@@ -159,7 +159,11 @@ void RegPath :: UpdateReg() {
 	if ( res != ERROR_SUCCESS ) {
 		throw Error( "Could not add update path in registry - " + LastWinError() );
 	}
-	SendMessageTimeout( HWND_BROADCAST, WM_SETTINGCHANGE, 0, 0, SMTO_ABORTIFHUNG, 0, 0  );
+	const char * what = "Environment";
+	DWORD rv;
+	std::cout << "broadcast change" << std::endl;
+	SendMessageTimeout( HWND_BROADCAST, WM_SETTINGCHANGE, 0,
+							(LPARAM) what, SMTO_ABORTIFHUNG, 5000, & rv );
 }
 
 //----------------------------------------------------------------------------
