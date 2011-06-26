@@ -8,6 +8,7 @@
 
 #include "util.h"
 #include <cstdlib>
+#include <windows.h>
 using std::string;
 
 //----------------------------------------------------------------------------
@@ -52,6 +53,15 @@ string ExpandPath( const std::string &  adir ) {
 	return rv;
 }
 
+//----------------------------------------------------------------------------
+// Notify system that things have changed
+//----------------------------------------------------------------------------
 
+void NotifyChanges() {
+	const char * what = "Environment";
+	DWORD rv;
+	SendMessageTimeout( HWND_BROADCAST, WM_SETTINGCHANGE, 0,
+							(LPARAM) what, SMTO_ABORTIFHUNG, 5000, & rv );
+}
 
 

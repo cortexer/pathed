@@ -159,10 +159,7 @@ void RegPath :: UpdateReg() {
 	if ( res != ERROR_SUCCESS ) {
 		throw Error( "Could not add update path in registry - " + LastWinError() );
 	}
-	const char * what = "Environment";
-	DWORD rv;
-	SendMessageTimeout( HWND_BROADCAST, WM_SETTINGCHANGE, 0,
-							(LPARAM) what, SMTO_ABORTIFHUNG, 5000, & rv );
+	NotifyChanges();
 }
 
 //----------------------------------------------------------------------------

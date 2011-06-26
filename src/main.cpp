@@ -237,6 +237,7 @@ void PrunePath() {
 
 	}
 	path.ReplaceAll( entry );
+	NotifyChanges();
 	std::cout << entry << std::endl;
 }
 
@@ -268,6 +269,7 @@ int GrepPath() {
 			epath += '\\';
 		}
 		epath += CommandParam;
+		// out << epath << endl;
 		DWORD attr = GetFileAttributes( epath.c_str() );
 		if ( attr != INVALID_FILE_ATTRIBUTES ) {
 			found++;

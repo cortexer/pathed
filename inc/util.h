@@ -14,6 +14,7 @@
 
 std::string GetEnv( const std::string &  name );
 std::string ExpandPath( const std::string & adir );
+void NotifyChanges();
 
 
 #endif
