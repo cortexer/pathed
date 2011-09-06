@@ -360,8 +360,7 @@ void Help() {
 // Main for pathed
 //----------------------------------------------------------------------------
 
-int main( int argc, char *argv[] )
-{
+int main( int argc, char *argv[] ) {
 	try {
 		CmdLine cl( argc, argv );
 		if ( cl.Argc() == 1 ) {
