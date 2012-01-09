@@ -7,4 +7,6 @@ obj
 bin
 *.layout
 *.depend
+*.smproj
 pathed_build_log.*
+desktop.ini

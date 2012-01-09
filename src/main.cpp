@@ -20,14 +20,15 @@ using namespace std;
 //----------------------------------------------------------------------------
 
 enum FlagName { fnNone, fnAdd, fnRemove, fnForce, fnGrep,
-				fnQuery, fnVerify, fnPrune, fnList, fnSys, fnExpand, fnEnv };
+				fnQuery, fnVerify, fnPrune, fnList, fnSys,
+				fnExpand, fnEnv, fnUnix };
 
 //----------------------------------------------------------------------------
-// Globals set dring command parsing
+// Globals set during command parsing
 //----------------------------------------------------------------------------
 
 FlagName CommandName = fnNone;
-bool Expand = false, CheckExist = true, UseSys = false;
+bool Expand = false, CheckExist = true, UseSys = false, Unix = false;
 string CommandParam = "";
 
 //----------------------------------------------------------------------------
@@ -54,6 +55,8 @@ Flag CmdLineFlags[] = {
 	{ fnForce, 		"-f", "--force", false, 0 },
 	{ fnGrep, 		"-g", "--grep", true, 1 },
 	{ fnEnv,		"-e", "--env", true, 0 },
+	{ fnUnix,		"-u", "--unix", false, 0 },
+
 	{ fnNone, NULL, NULL, false, 0 }		// must be last
 };
 
@@ -138,6 +141,7 @@ void ParseCommandLine( CmdLine & cl  ) {
 				case fnExpand:		Expand = true; break;
 				case fnForce:		CheckExist = false ; break;
 				case fnSys:			UseSys  = true; break;
+				case fnUnix:		Unix = true; break;
 				default:			throw Error( "bad option " );
 			}
 		}
@@ -147,6 +151,26 @@ void ParseCommandLine( CmdLine & cl  ) {
 	}
 }
 
+//----------------------------------------------------------------------------
+// If the global Unix flag is set, replace all backslashes in path with
+// forward slashes, returning new path.
+//----------------------------------------------------------------------------
+
+string ConvertSep( const string & path ) {
+	if ( ! Unix ) {
+		return path;
+	}
+	string np;
+	for( unsigned int i = 0; i < path.size(); i++ ) {
+		if ( path[i] == '\\' ) {
+			np += '/';
+		}
+		else {
+			np += path[i];
+		}
+	}
+	return np;
+}
 
 //----------------------------------------------------------------------------
 // List PATH to stdout, one directory per line
@@ -155,7 +179,9 @@ void ParseCommandLine( CmdLine & cl  ) {
 void ListPath() {
 	RegPath path( UseSys ? HKEY_LOCAL_MACHINE : HKEY_CURRENT_USER );
 	for ( unsigned int i = 0; i < path.Count(); i++ ) {
-		cout << ( Expand ? ExpandPath( path.At(i) ) : path.At(i) ) << "\n";
+		cout << ( Expand
+					? ConvertSep( ExpandPath( path.At(i) ) )
+					: ConvertSep( path.At(i) ) ) << "\n";
 	}
 }
 
@@ -226,7 +252,7 @@ void PrunePath() {
 		DWORD attr = GetFileAttributes( dir.c_str() );
 		if ( attr == INVALID_FILE_ATTRIBUTES ||
 						! (attr & FILE_ATTRIBUTE_DIRECTORY ) ) {
-			cout << "Pruned: " << ordered[i] << endl;
+			cout << "Pruned: " << ConvertSep( ordered[i] ) << endl;
 		}
 		else {
 			if ( entry != "" ) {
@@ -238,7 +264,7 @@ void PrunePath() {
 	}
 	path.ReplaceAll( entry );
 	NotifyChanges();
-	std::cout << entry << std::endl;
+	std::cout << ConvertSep( entry ) << std::endl;
 }
 
 //----------------------------------------------------------------------------
@@ -273,14 +299,14 @@ int GrepPath() {
 		DWORD attr = GetFileAttributes( epath.c_str() );
 		if ( attr != INVALID_FILE_ATTRIBUTES ) {
 			found++;
-			cout << epath << endl;
+			cout << ConvertSep( epath ) << endl;
 		}
 	}
 	return found == 0 ? 1 : 0;
 }
 
 //----------------------------------------------------------------------------
-// List path in PATH environment variable - flags have no effect.
+// List path in PATH environment variable - flags except -u have no effect.
 //----------------------------------------------------------------------------
 
 int EnvPath() {
@@ -291,6 +317,9 @@ int EnvPath() {
 	while( * p ) {
 		if ( * p == ';' ) {
 			cout << '\n';
+		}
+		else if ( * p == '\\' && Unix ) {
+			cout << "/";
 		}
 		else {
 			cout << * p;
@@ -333,9 +362,9 @@ void Help() {
 	cout <<
 
 	"\npathed is a command-line tool for changing and querying the path in the registry\n\n"
-	"Version 0.8\n"
-	"Copyright (C) 2011 Neil Butterworth\n\n"
-	"usage: pathed [-a dir | -r dir | -e | -l | -q dir | -v | -p | -g file] [-s] [-f] [-x] \n\n"
+	"Version 0.85\n"
+	"Copyright (C) 2012 Neil Butterworth\n\n"
+	"usage: pathed [-a dir | -r dir | -e | -l | -q dir | -v | -p | -g file] [-s] [-f] [-x] [-u] \n\n"
 	"pathed -a dir    adds dir to the path in  the registry\n"
 	"pathed -r dir    removes  dir from the path in the registry\n"
 	"pathed -l        lists the entries on the current path in the registry\n"
@@ -350,6 +379,8 @@ void Help() {
 	"path. To prevent this, use the -f flag.\n\n"
 	"Paths containing environment variables such as %systemroot% will not normally have\n"
 	"the variables expanded to their values. To expand them, use the -x flag\n\n"
+	"On output only, use the -u flag to produce UNIX-style paths, using forward-slash\n"
+	"as the separator\n\n"
 	"AS WITH ALL COMMANDS THAT CHANGE THE REGISTRY, PATHED CAN CAUSE DAMAGE IF YOU\n"
 	"DO NOT KNOW WHAT YOU ARE DOING. IF IN DOUBT, DO NOT USE IT!\n"
 
