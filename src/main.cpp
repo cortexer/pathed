@@ -8,6 +8,7 @@
 
 #include <iostream>
 #include <set>
+#include <direct.h>  // for getcwd()
 #include "cmdline.h"
 #include "error.h"
 #include "registry.h"
@@ -21,7 +22,7 @@ using namespace std;
 
 enum FlagName { fnNone, fnAdd, fnRemove, fnForce, fnGrep,
 				fnQuery, fnVerify, fnPrune, fnList, fnSys,
-				fnExpand, fnEnv, fnUnix };
+				fnExpand, fnEnv, fnUnix, fnCwd, fnUnCwd };
 
 //----------------------------------------------------------------------------
 // Globals set during command parsing
@@ -45,6 +46,8 @@ struct Flag {
 
 Flag CmdLineFlags[] = {
 	{ fnAdd, 		"-a", "--add", true, 1 },
+	{ fnCwd, 		"-c", "--cwd", true, 0 },
+	{ fnUnCwd, 		"-d", "--uncwd", true, 0 },
 	{ fnRemove, 	"-r", "--remove", true, 1 },
 	{ fnList, 		"-l", "--list", true, 0 },
 	{ fnQuery, 		"-q", "--query", true, 1 },
@@ -189,37 +192,67 @@ void ListPath() {
 // Add an entry to the path
 //----------------------------------------------------------------------------
 
-void AddPath() {
-	if ( CommandParam == "" ) {
+void AddPath( const char * cwd = NULL ) {
+	string pathstr = cwd == NULL ? CommandParam : cwd;
+	if ( pathstr == ""  ) {
 		throw Error( "Need directory to add" );
 	}
 	if ( CheckExist ) {
-		DWORD attr = GetFileAttributes( CommandParam.c_str() );
+		DWORD attr = GetFileAttributes( pathstr.c_str() );
 		if ( attr == INVALID_FILE_ATTRIBUTES || ! (attr & FILE_ATTRIBUTE_DIRECTORY ) ) {
-			throw Error( "No such directory: " + CommandParam );
+			throw Error( "No such directory: " + pathstr );
 		}
 	}
 
 	RegPath path( UseSys ? HKEY_LOCAL_MACHINE : HKEY_CURRENT_USER );
-	if ( path.Find( CommandParam, RegPath::NoExpand ) ) {
-		throw Error( CommandParam + " is already on the path" );
+	if ( path.Find( pathstr, RegPath::NoExpand ) ) {
+		throw Error( pathstr + " is already on the path" );
 	}
-	path.Add( CommandParam );
+	path.Add( pathstr );
+}
+
+//----------------------------------------------------------------------------
+// add current directory to path by calling addpath
+//----------------------------------------------------------------------------
+
+void AddCwd() {
+	const int BUFSIZE = 2048;
+	char buffer[BUFSIZE];
+	char * p = getcwd( buffer, BUFSIZE );
+	if ( p == NULL ) {
+		throw Error( "Could not get working directory name" );
+	}
+	AddPath( buffer );
 }
 
 //----------------------------------------------------------------------------
 // Remove entry from the path
 //----------------------------------------------------------------------------
 
-void RemovePath() {
-	if ( CommandParam == "" ) {
+void RemovePath( const char * cwd = NULL ) {
+	string pathstr = cwd == NULL ? CommandParam : cwd;
+	if ( pathstr == "" ) {
 		throw Error( "Need directory to remove" );
 	}
 	RegPath path( UseSys ? HKEY_LOCAL_MACHINE : HKEY_CURRENT_USER );
-	if ( ! path.Find( CommandParam , RegPath::NoExpand ) ) {
-		throw Error( CommandParam + " is not on the path" );
+	if ( ! path.Find( pathstr , RegPath::NoExpand ) ) {
+		throw Error( pathstr + " is not on the path" );
 	}
-	path.Remove( CommandParam );
+	path.Remove( pathstr );
+}
+
+//----------------------------------------------------------------------------
+// Remove  current directory from  path by
+//----------------------------------------------------------------------------
+
+void UnCwd() {
+	const int BUFSIZE = 2048;
+	char buffer[BUFSIZE];
+	char * p = getcwd( buffer, BUFSIZE );
+	if ( p == NULL ) {
+		throw Error( "Could not get working directory name" );
+	}
+	RemovePath( buffer );
 }
 
 //----------------------------------------------------------------------------
@@ -362,10 +395,12 @@ void Help() {
 	cout <<
 
 	"\npathed is a command-line tool for changing and querying the path in the registry\n\n"
-	"Version 0.85\n"
+	"Version 0.9\n"
 	"Copyright (C) 2012 Neil Butterworth\n\n"
-	"usage: pathed [-a dir | -r dir | -e | -l | -q dir | -v | -p | -g file] [-s] [-f] [-x] [-u] \n\n"
+	"usage: pathed [-a dir | -r dir | -c | -d | -e | -l | -q dir | -v | -p | -g file] [-s] [-f] [-x] [-u] \n\n"
 	"pathed -a dir    adds dir to the path in  the registry\n"
+	"pathed -c        add current working directory to path in registry\n"
+	"pathed -d        remove current working directory from path in registry\n"
 	"pathed -r dir    removes  dir from the path in the registry\n"
 	"pathed -l        lists the entries on the current path in the registry\n"
 	"pathed -e        lists the entries on the current path in the PATH environment variable\n"
@@ -410,6 +445,8 @@ int main( int argc, char *argv[] ) {
 			case fnPrune:	PrunePath(); break;
 			case fnGrep:	GrepPath(); break;
 			case fnEnv:	    EnvPath(); break;
+			case fnCwd:		AddCwd(); break;
+			case fnUnCwd:	UnCwd(); break;
 			default:		throw Error( "bad command switch" );
 		}
 
