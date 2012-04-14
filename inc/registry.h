@@ -34,6 +34,7 @@ class RegPath {
 
 		void SplitPath( const std::string & path );
 		void UpdateReg();
+		bool  RemoveIC( const std::string & adir );
 
 		HKEY mRoot, mPathKey;
 		typedef std::vector <std::string>  VecType;

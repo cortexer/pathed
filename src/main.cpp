@@ -238,7 +238,9 @@ void RemovePath( const char * cwd = NULL ) {
 	if ( ! path.Find( pathstr , RegPath::NoExpand ) ) {
 		throw Error( pathstr + " is not on the path" );
 	}
-	path.Remove( pathstr );
+	if ( ! path.Remove( pathstr ) ) {
+		throw Error( pathstr + "not found on path" );
+	}
 }
 
 //----------------------------------------------------------------------------
