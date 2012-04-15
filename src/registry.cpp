@@ -162,23 +162,6 @@ void RegPath :: UpdateReg() {
 	NotifyChanges();
 }
 
-//----------------------------------------------------------------------------
-// Compare two strings ignoring case
-//----------------------------------------------------------------------------
-
-static bool CmpIC( const string & s1, const string & s2 ) {
-	if ( s1.size() == s2.size() ) {
-		for( unsigned int i = 0; i < s1.size(); i++ ) {
-			if ( toupper( s1[i] ) != toupper( s2[i] ) ) {
-				return false;
-			}
-		}
-		return true;
-	}
-	else {
-		return false;
-	}
-}
 
 //----------------------------------------------------------------------------
 // Find string in path, ignoring case
@@ -186,7 +169,7 @@ static bool CmpIC( const string & s1, const string & s2 ) {
 
 bool RegPath :: RemoveIC( const std::string & adir ) {
 	for( VecType::iterator it = mPath.begin(); it != mPath.end(); ++ it ) {
-		if ( CmpIC( adir, * it ) ) {
+		if ( Same( adir, * it ) ) {
 			mPath.erase( it );
 			return true;
 		}
